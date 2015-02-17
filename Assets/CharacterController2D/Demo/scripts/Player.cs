@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.UI;
 
-
-public class DemoScene : MonoBehaviour
+public class Player : MonoBehaviour
 {
 	// movement config
 	public float gravity = -25f;
@@ -10,7 +11,16 @@ public class DemoScene : MonoBehaviour
 	public float groundDamping = 20f; // how fast do we change direction? higher means faster
 	public float inAirDamping = 5f;
 	public float jumpHeight = 3f;
-
+	public float eatingTimer = 0.0f;
+	public float size = 1f;
+	public int health = 3;
+	public List<Image> hearts;
+	public Sprite fullHeart;
+	public Sprite emptyHeart;
+	public bool invul = false;
+	public float invulTimer = 0f;
+	public float invulLength = 1f;
+	public GameObject gameOver;
 	[HideInInspector]
 	private float normalizedHorizontalSpeed = 0;
 
@@ -19,7 +29,7 @@ public class DemoScene : MonoBehaviour
 	private RaycastHit2D _lastControllerColliderHit;
 	private Vector3 _velocity;
 
-
+	public bool eating = false;
 
 
 	void Awake()
@@ -31,6 +41,7 @@ public class DemoScene : MonoBehaviour
 		_controller.onControllerCollidedEvent += onControllerCollider;
 		_controller.onTriggerEnterEvent += onTriggerEnterEvent;
 		_controller.onTriggerExitEvent += onTriggerExitEvent;
+		gameOver.gameObject.SetActive(false);
 	}
 
 
@@ -38,6 +49,11 @@ public class DemoScene : MonoBehaviour
 
 	void onControllerCollider( RaycastHit2D hit )
 	{
+		if(hit.collider.tag =="Pickup"){
+			eating = true;
+			hit.collider.gameObject.SendMessage("Death");
+
+		}
 		// bail out on plain old ground hits cause they arent very interesting
 		if( hit.normal.y == 1f )
 			return;
@@ -50,7 +66,9 @@ public class DemoScene : MonoBehaviour
 	void onTriggerEnterEvent( Collider2D col )
 	{	
 		if(col.tag == "Pickup"){
-			this.transform.localScale = new Vector2(Mathf.Abs(transform.localScale.x) + 0.1f, transform.localScale.y + 0.1f);
+			eating = true;
+			col.gameObject.SendMessage("Death");
+			this.transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x) + 0.1f, transform.localScale.y + 0.1f, 1f);
 		}
 		Debug.Log( "onTriggerEnterEvent: " + col.gameObject.name );
 	}
@@ -67,6 +85,28 @@ public class DemoScene : MonoBehaviour
 	// the Update loop contains a very simple example of moving the character around and controlling the animation
 	void Update()
 	{
+
+		if(invul){
+			if(invulTimer > invulLength){
+				invul = false;
+				_animator.Play( Animator.StringToHash( "ChocolateRightWalk" ) );
+				invulTimer = 0.0f;
+			}
+			else{
+				invulTimer += Time.deltaTime;
+			}
+		}
+		setHealth();
+		if(eating){
+			if(eatingTimer > 0.66f){
+				eating = false;
+				_animator.Play( Animator.StringToHash( "ChocolateRightWalk" ) );
+				eatingTimer = 0.0f;
+			}
+			else{
+				eatingTimer += Time.deltaTime;
+			}
+		}
 		// grab our current _velocity to use as a base for all calculations
 		_velocity = _controller.velocity;
 
@@ -76,27 +116,36 @@ public class DemoScene : MonoBehaviour
 		if( Input.GetKey( KeyCode.RightArrow ) )
 		{
 			normalizedHorizontalSpeed = 1;
-			if( transform.localScale.x < 0f )
-				transform.localScale = new Vector3( -transform.localScale.x, transform.localScale.y, transform.localScale.z );
+		
 
-			if( _controller.isGrounded )
-				_animator.Play( Animator.StringToHash( "Run" ) );
+			if(eating){
+				_animator.Play( Animator.StringToHash( "ChocolateRightEating" ) );
+			}
+			else{
+				if( _controller.isGrounded ){
+					_animator.Play( Animator.StringToHash( "ChocolateRightWalk" ) );
+				}
+			}
 		}
 		else if( Input.GetKey( KeyCode.LeftArrow ) )
 		{
 			normalizedHorizontalSpeed = -1;
-			if( transform.localScale.x > 0f )
-				transform.localScale = new Vector3( -transform.localScale.x, transform.localScale.y, transform.localScale.z );
 
-			if( _controller.isGrounded )
-				_animator.Play( Animator.StringToHash( "Run" ) );
+			if(eating){
+				_animator.Play( Animator.StringToHash( "ChocolateLeftEating" ) );
+			}
+			else{
+				if( _controller.isGrounded ){
+					_animator.Play( Animator.StringToHash( "ChocolateLeftWalk" ) );
+				}
+			}
 		}
 		else
 		{
 			normalizedHorizontalSpeed = 0;
 
-			if( _controller.isGrounded )
-				_animator.Play( Animator.StringToHash( "Idle" ) );
+//			if( _controller.isGrounded )
+//				_animator.Play( Animator.StringToHash( "Idle" ) );
 		}
 
 
@@ -104,7 +153,7 @@ public class DemoScene : MonoBehaviour
 		if( _controller.isGrounded && Input.GetKeyDown( KeyCode.UpArrow ) )
 		{
 			_velocity.y = Mathf.Sqrt( 2f * jumpHeight * -gravity );
-			_animator.Play( Animator.StringToHash( "Jump" ) );
+		//	_animator.Play( Animator.StringToHash( "Jump" ) );
 		}
 
 
@@ -118,4 +167,33 @@ public class DemoScene : MonoBehaviour
 		_controller.move( _velocity * Time.deltaTime );
 	}
 
+	public void setHealth(){
+		if(health == 3){
+			foreach(Image i in hearts){
+				i.sprite = fullHeart;
+			}
+		}
+		else if(health == 2){
+			hearts[2].sprite = emptyHeart;
+			hearts[1].sprite = fullHeart;
+			hearts[0].sprite = fullHeart;
+		}
+		else if(health == 0){
+			hearts[2].sprite = emptyHeart;
+			hearts[1].sprite = emptyHeart;
+			hearts[0].sprite = fullHeart;
+		}
+		else if(health <= 0){
+			hearts[2].sprite = emptyHeart;
+			hearts[1].sprite = emptyHeart;
+			hearts[0].sprite = emptyHeart;
+			playerDeath ();
+		}
+	}
+
+	public void playerDeath(){
+		gameOver.SetActive(true);
+		Time.timeScale = 0.0f;
+
+	}
 }
