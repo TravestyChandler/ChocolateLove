@@ -24,11 +24,14 @@ public class Player : MonoBehaviour
 	[HideInInspector]
 	private float normalizedHorizontalSpeed = 0;
 
+	public AudioClip eatSound;
+	public AudioClip hitSound;
 	private CharacterController2D _controller;
 	private Animator _animator;
 	private RaycastHit2D _lastControllerColliderHit;
 	private Vector3 _velocity;
 
+	public ParticleSystem part;
 	public bool eating = false;
 
 
@@ -42,6 +45,7 @@ public class Player : MonoBehaviour
 		_controller.onTriggerEnterEvent += onTriggerEnterEvent;
 		_controller.onTriggerExitEvent += onTriggerExitEvent;
 		gameOver.gameObject.SetActive(false);
+		part.renderer.sortingLayerName = "Player";
 	}
 
 
@@ -51,6 +55,7 @@ public class Player : MonoBehaviour
 	{
 		if(hit.collider.tag =="Pickup"){
 			eating = true;
+
 			hit.collider.gameObject.SendMessage("Death");
 
 		}
@@ -65,10 +70,11 @@ public class Player : MonoBehaviour
 
 	void onTriggerEnterEvent( Collider2D col )
 	{	
-		if(col.tag == "Pickup"){
+		if(col.tag =="Pickup"){
 			eating = true;
+			
 			col.gameObject.SendMessage("Death");
-			this.transform.localScale = new Vector3(Mathf.Abs(transform.localScale.x) + 0.1f, transform.localScale.y + 0.1f, 1f);
+			
 		}
 		Debug.Log( "onTriggerEnterEvent: " + col.gameObject.name );
 	}
@@ -116,8 +122,9 @@ public class Player : MonoBehaviour
 		if( Input.GetKey( KeyCode.RightArrow ) )
 		{
 			normalizedHorizontalSpeed = 1;
-		
-
+			part.emissionRate = 6;
+			this.transform.localScale = new Vector3(Mathf.Abs (this.transform.localScale.x), this.transform.localScale.y, this.transform.localScale.z);
+			part.transform.eulerAngles = new Vector3(180f, 90f, 0);
 			if(eating){
 				_animator.Play( Animator.StringToHash( "ChocolateRightEating" ) );
 			}
@@ -130,20 +137,22 @@ public class Player : MonoBehaviour
 		else if( Input.GetKey( KeyCode.LeftArrow ) )
 		{
 			normalizedHorizontalSpeed = -1;
-
+			part.emissionRate = 6;
+			this.transform.localScale = new Vector3(-Mathf.Abs (this.transform.localScale.x), this.transform.localScale.y, this.transform.localScale.z);
+			part.transform.eulerAngles = new Vector3(0f, 90f, 0);
 			if(eating){
-				_animator.Play( Animator.StringToHash( "ChocolateLeftEating" ) );
+				_animator.Play( Animator.StringToHash( "ChocolateRightEating" ) );
 			}
 			else{
 				if( _controller.isGrounded ){
-					_animator.Play( Animator.StringToHash( "ChocolateLeftWalk" ) );
+					_animator.Play( Animator.StringToHash( "ChocolateRightEating" ) );
 				}
 			}
 		}
 		else
 		{
 			normalizedHorizontalSpeed = 0;
-
+			part.emissionRate = 0;
 //			if( _controller.isGrounded )
 //				_animator.Play( Animator.StringToHash( "Idle" ) );
 		}
