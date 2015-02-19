@@ -21,6 +21,7 @@ public class Player : MonoBehaviour
 	public float invulTimer = 0f;
 	public float invulLength = 1f;
 	public GameObject gameOver;
+	public GameObject victory;
 	[HideInInspector]
 	private float normalizedHorizontalSpeed = 0;
 
@@ -46,6 +47,7 @@ public class Player : MonoBehaviour
 		_controller.onTriggerExitEvent += onTriggerExitEvent;
 		gameOver.gameObject.SetActive(false);
 		part.renderer.sortingLayerName = "Player";
+		victory.gameObject.SetActive(false);
 	}
 
 
@@ -207,7 +209,7 @@ public class Player : MonoBehaviour
 	}
 
 	public void GameWin(){
-		gameOver.SetActive(true);
+		victory.SetActive(true);
 		Time.timeScale = 0.0f;
 	}
 }
