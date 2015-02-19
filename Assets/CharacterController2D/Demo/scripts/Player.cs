@@ -72,9 +72,10 @@ public class Player : MonoBehaviour
 	{	
 		if(col.tag =="Pickup"){
 			eating = true;
-			
 			col.gameObject.SendMessage("Death");
-			
+		}
+		if(col.tag == "Baker"){
+			col.gameObject.SendMessage("Death");
 		}
 		Debug.Log( "onTriggerEnterEvent: " + col.gameObject.name );
 	}
@@ -145,7 +146,7 @@ public class Player : MonoBehaviour
 			}
 			else{
 				if( _controller.isGrounded ){
-					_animator.Play( Animator.StringToHash( "ChocolateRightEating" ) );
+					_animator.Play( Animator.StringToHash( "ChocolateRightWalk" ) );
 				}
 			}
 		}
@@ -203,6 +204,10 @@ public class Player : MonoBehaviour
 	public void playerDeath(){
 		gameOver.SetActive(true);
 		Time.timeScale = 0.0f;
+	}
 
+	public void GameWin(){
+		gameOver.SetActive(true);
+		Time.timeScale = 0.0f;
 	}
 }
